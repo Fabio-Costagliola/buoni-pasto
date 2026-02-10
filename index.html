@@ -160,5 +160,18 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
+<script>
+// Ascolta messaggi dal service worker
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', event => {
+        if (event.data && event.data.type === 'NEW_VERSION') {
+            console.log("Nuova versione disponibile → ricarico");
+            window.location.reload(true);
+        }
+    });
+}
+</script>
+
 </body>
+
 </html>
