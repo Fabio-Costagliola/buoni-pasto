@@ -179,19 +179,52 @@ if ('serviceWorker' in navigator) {
 </script>
 
 <script>
-// Ascolta messaggi dal service worker
+// === REGISTRAZIONE SERVICE WORKER CON AGGIORNAMENTO FORZATO ===
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.addEventListener('message', event => {
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('service-worker.js', {
+        // Evita di usare la cache HTTP per i file del SW
+        updateViaCache: 'none'
+      });
+
+      // Forza subito un check del SW su ogni avvio
+      reg.update().catch(() => {});
+
+      // Se il SW invia NEW_VERSION, ricarichiamo (già presente, lo manteniamo)
+      navigator.serviceWorker.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'NEW_VERSION') {
-            console.log("Nuova versione disponibile → ricarico");
-            window.location.reload(true);
+          console.log('Nuova versione disponibile → ricarico');
+          window.location.reload();
         }
-    });
+      });
+
+      // Se cambia il controller (nuovo SW attivo), ricarica
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('controllerchange → ricarico');
+        window.location.reload();
+      });
+
+      // Ogni volta che l’app torna in primo piano, ricontrolla aggiornamenti
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          reg.update().catch(() => {});
+        }
+      });
+
+      // Controllo periodico (es. ogni 30s mentre è aperta)
+      setInterval(() => reg.update().catch(() => {}), 30000);
+
+    } catch (e) {
+      console.warn('SW registration error:', e);
+    }
+  });
 }
 </script>
 
 </body>
 
 </html>
+
 
 
