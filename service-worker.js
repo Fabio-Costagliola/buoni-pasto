@@ -1,4 +1,4 @@
-const VERSION = "v1.0.3";  // 🔥 CAMBIALA AD OGNI AGGIORNAMENTO
+const VERSION = "v1.0.4";  // 🔥 CAMBIALA AD OGNI AGGIORNAMENTO
 const CACHE_NAME = `buoni-pasto-cache-${VERSION}`;
 
 const FILES_TO_CACHE = [
@@ -47,5 +47,6 @@ self.addEventListener("fetch", event => {
         })
     );
 });
+
 
 
