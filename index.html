@@ -19,35 +19,53 @@
         max-width: 480px;
         margin: auto;
     }
-    input, button {
-        width: 100%;
-        padding: 12px;
-        font-size: 18px;
-        margin-bottom: 10px;
-    }
-    button {
-        background-color: #007aff;
-        color: white;
-        border: none;
-        border-radius: 6px;
-    }
-    #lista li {
-        margin-bottom: 10px;
-    }
-    .remove-btn {
-        background: #ff3b30: none;
-        padding: 5px 10px;
-        margin-left: 10px;
-        border-radius: 4px;
-    }
-    .edit-btn {
-        background: #ff9500;
-        color: white;
-        border: none;
-        padding: 5px 10px;
-        margin-left: 10px;
-        border-radius: 4px;
-    }
+    /* Riga lista: importo a sinistra, bottoni a destra */
+#lista ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+#lista li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+/* Importo: prende tutto lo spazio disponibile */
+#lista li .amount {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Pulsanti icona ultra-compatti */
+.icon-btn {
+  font-size: 16px;          /* dimensione icona */
+  padding: 4px 6px;         /* micro padding */
+  line-height: 1;
+  min-width: 0;
+  width: auto;
+  border: none;
+  background: transparent;  /* nessun background per minimizzare */
+  color: #333;
+  border-radius: 6px;
+  /* touch target ragionevole ma compatto */
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Stato attivo/hover per feedback tattile/visivo */
+.icon-btn:active {
+  background: rgba(0,0,0,0.06);
+}
+
+.icon-btn.edit { color: #ff9500; }   /* ✏️ */
+.icon-btn.remove { color: #ff3b30; } /* ❌ */
 </style>
 </head>
 
@@ -136,22 +154,19 @@ function aggiungiImporto() {
 }
 
 function aggiornaLista() {
-    let html = "<h3>Importi:</h3><ul style='list-style:none;padding-left:0;'>";
-
-    importi.forEach((v, i) => {
-        const euro = (v / 100).toFixed(2);
-
-        html += `
-            <li style="display:flex; align-items:center; margin-bottom:10px;">
-                <span style="flex:1;">€ ${euro}</span>
-                <button class="edit-btn" onclick="modifica(${i})">✏️</button>
-                <button class="remove-btn" onclick="rimuovi(${i})">❌</button>
-            </li>
-        `;
-    });
-
-    html += "</ul>";
-    document.getElementById("lista").innerHTML = html;
+  let html = "<h3>Importi:</h3><ul>";
+  importi.forEach((v, i) => {
+    const euro = (v / 100).toFixed(2);
+    html += `
+      <li>
+        <span class="amount">€ ${euro}</span>
+        <button class="icon-btn edit" aria-label="Modifica" title="Modifica" onclick="modifica(${i})">✏️</button>
+        <button class="icon-btn remove" aria-label="Elimina" title="Elimina" onclick="rimuovi(${i})">❌</button>
+      </li>
+    `;
+  });
+  html += "</ul>";
+  document.getElementById("lista").innerHTML = html;
 }
 
 function rimuovi(i) {
@@ -301,6 +316,7 @@ mostraVersioneSW();
 </body>
 
 </html>
+
 
 
 
