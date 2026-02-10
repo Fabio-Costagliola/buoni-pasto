@@ -58,12 +58,12 @@
 <h2>Calcolatore Buoni Pasto</h2>
 
 <!-- Inserimento importo in centesimi (supporta espressioni: es. 199*2) -->
-<label>Aggiungi un importo in centesimi (es. 250 oppure 199*2):</label>
+<label>Aggiungi un importo in centesimi (es. 250 oppure 199x2):</label>
 <input
   type="text"
   id="importo"
   inputmode="numeric"
-  placeholder="es. 199*2"
+  placeholder="es. 199x2"
   autocomplete="off"
   autocorrect="off"
   autocapitalize="off"
@@ -201,7 +201,7 @@ function calcola() {
         <h3>Risultato:</h3>
         Totale spesa: € ${target.toFixed(2)}<br>
         Coperti dai buoni: € ${bestTotal.toFixed(2)}<br><br>
-        Resto: € ${target.toFixed(2)-bestTotal.toFixed(2)}<br><br>
+        Resto: € ${target.toFixed(2)}-{$bestTotal.toFixed(2)}<br><br>
         Buoni da 11,35 €: <b>${bestLarge}</b><br>
         Buoni da 7,50 €: <b>${bestSmall}</b>
     `;
@@ -304,6 +304,7 @@ mostraVersioneSW();
 </body>
 
 </html>
+
 
 
 
