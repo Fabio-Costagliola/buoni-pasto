@@ -185,6 +185,7 @@ function calcola() {
     let bestTotal = 0;
     let bestSmall = 0;
     let bestLarge = 0;
+    let resto = 0;
 
     for (let nLarge = 0; nLarge <= Math.floor(target / large); nLarge++) {
         for (let nSmall = 0; nSmall <= Math.floor(target / small); nSmall++) {
@@ -195,13 +196,14 @@ function calcola() {
                 bestSmall = nSmall;
             }
         }
+    resto = target - bestTotal;
     }
 
     document.getElementById("output").innerHTML = `
         <h3>Risultato:</h3>
         Totale spesa: € ${target.toFixed(2)}<br>
         Coperti dai buoni: € ${bestTotal.toFixed(2)}<br><br>
-        Resto: € ${target.toFixed(2)}-${bestTotal.toFixed(2)}<br><br>
+        Resto: € ${resto.toFixed(2)}<br><br>
         Buoni da 11,35 €: <b>${bestLarge}</b><br>
         Buoni da 7,50 €: <b>${bestSmall}</b>
     `;
@@ -304,6 +306,7 @@ mostraVersioneSW();
 </body>
 
 </html>
+
 
 
 
