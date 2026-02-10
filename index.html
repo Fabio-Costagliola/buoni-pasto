@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+
+<!-- comportamento da app -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon.png">
+
+<title>Buoni Pasto</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        max-width: 480px;
+        margin: auto;
+    }
+    input, button {
+        width: 100%;
+        padding: 12px;
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+    button {
+        background-color: #007aff;
+        color: white;
+        border: none;
+        border-radius: 6px;
+    }
+    #lista li {
+        margin-bottom: 10px;
+    }
+    .remove-btn {
+        background: #ff3b30: none;
+        padding: 5px 10px;
+        margin-left: 10px;
+        border-radius: 4px;
+    }
+    .edit-btn {
+        background: #ff9500;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        margin-left: 10px;
+        border-radius: 4px;
+    }
+</style>
+</head>
+
+<body>
+
+<h2>Calcolatore Buoni Pasto</h2>
+
+<label>Aggiungi un importo in centesimi:</label>
+<input type="number" id="importo" inputmode="numeric">
+<button onclick="aggiungiImporto()">Aggiungi</button>
+
+<div id="lista"></div>
+
+<h3>Totale: € <span id="totale">0.00</span></h3>
+
+<button onclick="calcola()">Calcola buoni pasto</button>
+
+<div id="output"></div>
+
+<script>
+// =========== LOGICA DELL’APP ===========
+let importi = [];
+
+function aggiungiImporto() {
+    const input = document.getElementById("importo");
+    const valore = parseInt(input.value);
+
+    if (!isNaN(valore) && valore > 0) {
+        importi.push(valore);
+        input.value = "";
+        aggiornaLista();
+        aggiornaTotale();
+    }
+}
+
+function aggiornaLista() {
+    let html = "<h3>Importi:</h3><ul style='list-style:none;padding-left:0;'>";
+
+    importi.forEach((v, i) => {
+        const euro = (v / 100).toFixed(2);
+
+        html += `
+            <li style="display:flex; align-items:center; margin-bottom:10px;">
+                <span style="flex:1;">€ ${euro}</span>
+                <button class="edit-btn" onclick="modifica(${i})">✏️</button>
+                <button class="remove-btn" onclick="rimuovi(${i})">❌</button>
+            </li>
+        `;
+    });
+
+    html += "</ul>";
+    document.getElementById("lista").innerHTML = html;
+}
+
+function rimuovi(i) {
+    importi.splice(i, 1);
+    aggiornaLista();
+    aggiornaTotale();
+}
+
+function modifica(i) {
+    const nuovo = prompt("Nuovo importo in centesimi:", importi[i]);
+    if (nuovo !== null && !isNaN(parseInt(nuovo)) && parseInt(nuovo) > 0) {
+        importi[i] = parseInt(nuovo);
+        aggiornaLista();
+        aggiornaTotale();
+    }
+}
+
+function aggiornaTotale() {
+    const tot = importi.reduce((a, b) => a + b, 0);
+    document.getElementById("totale").textContent = (tot / 100).toFixed(2);
+}
+
+function calcola() {
+    const target = importi.reduce((a, b) => a + b, 0) / 100;
+
+    const small = 7.50;
+    const large = 11.35;
+
+    let bestTotal = 0;
+    let bestSmall = 0;
+    let bestLarge = 0;
+
+    for (let nLarge = 0; nLarge <= Math.floor(target / large); nLarge++) {
+        for (let nSmall = 0; nSmall <= Math.floor(target / small); nSmall++) {
+            let total = nLarge * large + nSmall * small;
+            if (total <= target && total > bestTotal) {
+                bestTotal = total;
+                bestLarge = nLarge;
+                bestSmall = nSmall;
+            }
+        }
+    }
+
+    document.getElementById("output").innerHTML = `
+        <h3>Risultato:</h3>
+        Totale spesa: € ${target.toFixed(2)}<br>
+        Coperti dai buoni: € ${bestTotal.toFixed(2)}<br><br>
+        Buoni da 11,35 €: <b>${bestLarge}</b><br>
+        Buoni da 7,50 €: <b>${bestSmall}</b>
+    `;
+}
+</script>
+
+<script>
+// =========== SERVICE WORKER ===========
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js');
+}
+</script>
+
+</body>
+</html>
