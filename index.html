@@ -53,7 +53,7 @@
 
 <body>
 
-<h2>Calcolatore Buoni Pasto, v1.0.5</h2>
+<h2>Calcolatore Buoni Pasto</h2>
 
 <!-- Inserimento importo in centesimi (supporta espressioni: es. 199*2) -->
 <label>Aggiungi un importo in centesimi (es. 250 oppure 199*2):</label>
@@ -269,10 +269,39 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<footer style="margin-top:40px; text-align:center; opacity:0.6; font-size:0.9em;">
+    Versione: <span id="versione">caricamento...</span>
+</footer>
 
+<script>
+// === Mostra la versione del service worker nel footer ===
+async function mostraVersioneSW() {
+    try {
+        // Forza un fetch senza cache
+        const resp = await fetch("service-worker.js?nocache=" + Date.now());
+        const testo = await resp.text();
+
+        // Cerca la stringa VERSION = "qualcosa"
+        const match = testo.match(/VERSION\s*=\s*["']([^"']+)["']/);
+
+        if (match && match[1]) {
+            document.getElementById("versione").textContent = match[1];
+        } else {
+            document.getElementById("versione").textContent = "n/d";
+        }
+
+    } catch (e) {
+        document.getElementById("versione").textContent = "errore";
+    }
+}
+
+mostraVersioneSW();
+</script>
+    
 </body>
 
 </html>
+
 
 
 
