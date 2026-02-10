@@ -2,12 +2,25 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<title>Calcolatore Buoni Pasto</title>
 
+<!-- comportamento da app -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content: 100%;
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon.png">
+
+<title>Buoni Pasto</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        max-width: 480px;
+        margin: auto;
+    }
+    input, button {
+        width: 100%;
         padding: 12px;
         font-size: 18px;
         margin-bottom: 10px;
@@ -18,58 +31,22 @@
         border: none;
         border-radius: 6px;
     }
-
-    /* Lista importi */
-    #lista ul {
-      list-style: none;
-      padding-left: 0;
-      margin: 0;
-    }
     #lista li {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-bottom: 8px;
+        margin-bottom: 10px;
     }
-    #lista li .amount {
-      flex: 1;
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .remove-btn {
+        background: #ff3b30: none;
+        padding: 5px 10px;
+        margin-left: 10px;
+        border-radius: 4px;
     }
-
-    /* Pulsanti icona */
-    .icon-btn {
-        font-size: 16px;
-        padding: 4px 6px;
-        line-height: 1;
-        min-width: 0;
-        width: auto;
+    .edit-btn {
+        background: #ff9500;
+        color: white;
         border: none;
-        background: transparent;
-        color: #333;
-        border-radius: 6px;
-        height: 28px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .icon-btn:active {
-        background: rgba(0,0,0,0.06);
-    }
-    .icon-btn.edit {
-        color: #ff9500;
-    }
-    .icon-btn.remove {
-        color: #ff3b30;
-    }
-
-    footer {
-      margin-top: 40px;
-      text-align: center;
-      opacity: 0.6;
-      font-size: 0.9em;
+        padding: 5px 10px;
+        margin-left: 10px;
+        border-radius: 4px;
     }
 </style>
 </head>
@@ -78,7 +55,7 @@
 
 <h2>Calcolatore Buoni Pasto</h2>
 
-<!-- Inserimento importo con espressioni -->
+<!-- Inserimento importo in centesimi (supporta espressioni: es. 199*2) -->
 <label>Aggiungi un importo in centesimi (es. 250 oppure 199*2):</label>
 <input
   type="text"
@@ -109,52 +86,37 @@
 
 <div id="output"></div>
 
-<footer>
-    Versione: <span id="versione">caricamento...</span>
-</footer>
-
 <script>
-// ===== Tastierino: inserimento operatori =====
-function ins(op) {
-  const input = document.getElementById("importo");
-  const start = input.selectionStart ?? input.value.length;
-  const end = input.selectionEnd ?? input.value.length;
-
-  input.value = input.value.slice(0, start) + op + input.value.slice(end);
-
-  const pos = start + op.length;
-  requestAnimationFrame(() => {
-    input.focus();
-    input.setSelectionRange(pos, pos);
-  });
-}
-
-// ===== Array importi in centesimi =====
+// =========== LOGICA DELL’APP ===========
 let importi = [];
 
-// ===== Aggiungi importo con parsing matematico =====
 function aggiungiImporto() {
   const input = document.getElementById("importo");
   let expr = (input.value || "").trim();
+
   if (!expr) return;
 
+  // Normalizza operatori visuali o alternativi
   expr = expr
     .replace(/×/g, "*")
     .replace(/[xX]/g, "*")
     .replace(/÷/g, "/")
-    .replace(/,/g, "")
-    .replace(/\s+/g, "");
+    .replace(/,/g, "")      // se l'utente incolla con virgole separatrici
+    .replace(/\s+/g, "");   // rimuovi spazi
 
+  // ✅ Consenti solo cifre e operatori sicuri: + - * / ( )
   const safe = /^[0-9+\-*/()]+$/;
   if (!safe.test(expr)) {
     alert("Espressione non valida. Usa solo numeri e + - * / ( )");
     return;
   }
 
+  // Valuta in modo controllato
   let valore;
   try {
+    // Esegue come pura espressione aritmetica
     valore = Function("return (" + expr + ")")();
-  } catch {
+  } catch (e) {
     alert("Espressione non valida");
     return;
   }
@@ -164,6 +126,7 @@ function aggiungiImporto() {
     return;
   }
 
+  // Lavoriamo in centesimi: arrotonda all'intero più vicino
   const valoreCentesimi = Math.round(valore);
 
   importi.push(valoreCentesimi);
@@ -172,109 +135,174 @@ function aggiungiImporto() {
   aggiornaTotale();
 }
 
-// ===== Aggiorna lista =====
 function aggiornaLista() {
-  let html = "<h3>Importi:</h3><ul>";
-  importi.forEach((v, i) => {
-    const euro = (v / 100).toFixed(2);
-    html += `
-      <li>
-        <span class="amount">€ ${euro}</span>
-        <button class="icon-btn edit" aria-label="Modifica" title="Modifica" onclick="modifica(${i})">✏️</button>
-        <button class="icon-btn remove" aria-label="Elimina" title="Elimina" onclick="rimuovi(${i})">❌</button>
-      </li>
-    `;
-  });
-  html += "</ul>";
-  document.getElementById("lista").innerHTML = html;
+    let html = "<h3>Importi:</h3><ul style='list-style:none;padding-left:0;'>";
+
+    importi.forEach((v, i) => {
+        const euro = (v / 100).toFixed(2);
+
+        html += `
+            <li style="display:flex; align-items:center; margin-bottom:10px;">
+                <span style="flex:1;">€ ${euro}</span>
+                <button class="edit-btn" onclick="modifica(${i})">✏️</button>
+                <button class="remove-btn" onclick="rimuovi(${i})">❌</button>
+            </li>
+        `;
+    });
+
+    html += "</ul>";
+    document.getElementById("lista").innerHTML = html;
 }
 
 function rimuovi(i) {
-  importi.splice(i, 1);
-  aggiornaLista();
-  aggiornaTotale();
+    importi.splice(i, 1);
+    aggiornaLista();
+    aggiornaTotale();
 }
 
 function modifica(i) {
-  const nuovo = prompt("Nuovo importo in centesimi:", importi[i]);
-  if (nuovo !== null && !isNaN(parseInt(nuovo)) && parseInt(nuovo) > 0) {
-    importi[i] = parseInt(nuovo);
-    aggiornaLista();
-    aggiornaTotale();
-  }
+    const nuovo = prompt("Nuovo importo in centesimi:", importi[i]);
+    if (nuovo !== null && !isNaN(parseInt(nuovo)) && parseInt(nuovo) > 0) {
+        importi[i] = parseInt(nuovo);
+        aggiornaLista();
+        aggiornaTotale();
+    }
 }
 
 function aggiornaTotale() {
-  const tot = importi.reduce((a, b) => a + b, 0);
-  document.getElementById("totale").textContent = (tot / 100).toFixed(2);
+    const tot = importi.reduce((a, b) => a + b, 0);
+    document.getElementById("totale").textContent = (tot / 100).toFixed(2);
 }
 
-// ===== Calcolo buoni pasto =====
 function calcola() {
-  const target = importi.reduce((a, b) => a + b, 0) / 100;
-  const small = 7.50;
-  const large = 11.35;
+    const target = importi.reduce((a, b) => a + b, 0) / 100;
 
-  let bestTotal = 0, bestSmall = 0, bestLarge = 0;
+    const small = 7.50;
+    const large = 11.35;
 
-  for (let nL = 0; nL <= Math.floor(target / large); nL++) {
-    for (let nS = 0; nS <= Math.floor(target / small); nS++) {
-      const tot = nL * large + nS * small;
-      if (tot <= target && tot > bestTotal) {
-        bestTotal = tot;
-        bestSmall = nS;
-        bestLarge = nL;
-      }
+    let bestTotal = 0;
+    let bestSmall = 0;
+    let bestLarge = 0;
+
+    for (let nLarge = 0; nLarge <= Math.floor(target / large); nLarge++) {
+        for (let nSmall = 0; nSmall <= Math.floor(target / small); nSmall++) {
+            let total = nLarge * large + nSmall * small;
+            if (total <= target && total > bestTotal) {
+                bestTotal = total;
+                bestLarge = nLarge;
+                bestSmall = nSmall;
+            }
+        }
     }
-  }
 
-  document.getElementById("output").innerHTML = `
-    <h3>Risultato:</h3>
-    Totale spesa: € ${target.toFixed(2)}<br>
-    Coperti dai buoni: € ${bestTotal.toFixed(2)}<br><br>
-    Buoni da 11,35 €: <b>${bestLarge}</b><br>
-    Buoni da 7,50 €: <b>${bestSmall}</b>
-  `;
+    document.getElementById("output").innerHTML = `
+        <h3>Risultato:</h3>
+        Totale spesa: € ${target.toFixed(2)}<br>
+        Coperti dai buoni: € ${bestTotal.toFixed(2)}<br><br>
+        Buoni da 11,35 €: <b>${bestLarge}</b><br>
+        Buoni da 7,50 €: <b>${bestSmall}</b>
+    `;
 }
 
-// ===== Mostra versione SW =====
-async function mostraVersioneSW() {
-  try {
-    const resp = await fetch("service-worker.js?nocache=" + Date.now());
-    const txt = await resp.text();
-    const m = txt.match(/VERSION\s*=\s*[^"']+["']/);
-    document.getElementById("versione").textContent = m ? m[1] : "n/d";
-  } catch {
-    document.getElementById("versione").textContent = "errore";
-  }
-}
-mostraVersioneSW();
+function ins(op) {
+  const input = document.getElementById("importo");
+  const start = input.selectionStart ?? input.value.length;
+  const end = input.selectionEnd ?? input.value.length;
 
-// ===== Registrazione SW con aggiornamento immediato =====
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", async () => {
-    const reg = await navigator.serviceWorker.register("service-worker.js", {
-      updateViaCache: "none"
-    });
-
-    reg.update().catch(() => {});
-
-    navigator.serviceWorker.addEventListener("message", ev => {
-      if (ev.data?.type === "NEW_VERSION") window.location.reload();
-    });
-
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      window.location.reload();
-    });
-
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") reg.update().catch(() => {});
-    });
-
-    setInterval(() => reg.update().catch(() => {}), 30000);
+  input.value = input.value.slice(0, start) + op + input.value.slice(end);
+  // riposiziona il cursore dopo l’operatore inserito
+  const pos = start + op.length;
+  requestAnimationFrame(() => {
+    input.focus();
+    input.setSelectionRange(pos, pos);
   });
+}    
+</script>
+
+<script>
+// =========== SERVICE WORKER ===========
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js');
 }
 </script>
 
+<script>
+// === REGISTRAZIONE SERVICE WORKER CON AGGIORNAMENTO FORZATO ===
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('service-worker.js', {
+        // Evita di usare la cache HTTP per i file del SW
+        updateViaCache: 'none'
+      });
+
+      // Forza subito un check del SW su ogni avvio
+      reg.update().catch(() => {});
+
+      // Se il SW invia NEW_VERSION, ricarichiamo (già presente, lo manteniamo)
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'NEW_VERSION') {
+          console.log('Nuova versione disponibile → ricarico');
+          window.location.reload();
+        }
+      });
+
+      // Se cambia il controller (nuovo SW attivo), ricarica
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('controllerchange → ricarico');
+        window.location.reload();
+      });
+
+      // Ogni volta che l’app torna in primo piano, ricontrolla aggiornamenti
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          reg.update().catch(() => {});
+        }
+      });
+
+      // Controllo periodico (es. ogni 30s mentre è aperta)
+      setInterval(() => reg.update().catch(() => {}), 30000);
+
+    } catch (e) {
+      console.warn('SW registration error:', e);
+    }
+  });
+}
+</script>
+<footer style="margin-top:40px; text-align:center; opacity:0.6; font-size:0.9em;">
+    Versione: <span id="versione">caricamento...</span>
+</footer>
+
+<script>
+// === Mostra la versione del service worker nel footer ===
+async function mostraVersioneSW() {
+    try {
+        // Forza un fetch senza cache
+        const resp = await fetch("service-worker.js?nocache=" + Date.now());
+        const testo = await resp.text();
+
+        // Cerca la stringa VERSION = "qualcosa"
+        const match = testo.match(/VERSION\s*=\s*["']([^"']+)["']/);
+
+        if (match && match[1]) {
+            document.getElementById("versione").textContent = match[1];
+        } else {
+            document.getElementById("versione").textContent = "n/d";
+        }
+
+    } catch (e) {
+        document.getElementById("versione").textContent = "errore";
+    }
+}
+
+mostraVersioneSW();
+</script>
+    
 </body>
+
 </html>
+
+
+
+
+
