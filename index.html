@@ -55,8 +55,27 @@
 
 <h2>Calcolatore Buoni Pasto, v1.0.5</h2>
 
-<label>Aggiungi un importo in centesimi:</label>
-<input type="number" id="importo" inputmode="numeric">
+<!-- Inserimento importo in centesimi (supporta espressioni: es. 199*2) -->
+<label>Aggiungi un importo in centesimi (es. 250 oppure 199*2):</label>
+<input
+  type="text"
+  id="importo"
+  inputmode="numeric"
+  placeholder="es. 199*2"
+  autocomplete="off"
+  autocorrect="off"
+  autocapitalize="off"
+  spellcheck="false"
+/>
+
+<!-- Tastierino operatori -->
+<div id="ops" style="display:flex; gap:8px; margin-bottom:10px;">
+  <button type="button" onclick="ins('+')">+</button>
+  <button type="button" onclick="ins('-')">−</button>
+  <button type="button" onclick="ins('*')">×</button>
+  <button type="button" onclick="ins('/')">÷</button>
+</div>
+
 <button onclick="aggiungiImporto()">Aggiungi</button>
 
 <div id="lista"></div>
@@ -72,33 +91,48 @@
 let importi = [];
 
 function aggiungiImporto() {
-    const input = document.getElementById("importo");
-    const testo = input.value;
+  const input = document.getElementById("importo");
+  let expr = (input.value || "").trim();
 
-    if (!testo) return;
+  if (!expr) return;
 
-    // ✨ Valuta le espressioni come "199*2"
-    let valore;
-    try {
-        valore = Function("return " + testo)();
-    } catch (e) {
-        alert("Espressione non valida");
-        return;
-    }
+  // Normalizza operatori visuali o alternativi
+  expr = expr
+    .replace(/×/g, "*")
+    .replace(/[xX]/g, "*")
+    .replace(/÷/g, "/")
+    .replace(/,/g, "")      // se l'utente incolla con virgole separatrici
+    .replace(/\s+/g, "");   // rimuovi spazi
 
-    // Se non è numero o è negativo, blocca
-    if (isNaN(valore) || valore <= 0) {
-        alert("Inserisci un numero valido o un'espressione valida (es: 100*2)");
-        return;
-    }
+  // ✅ Consenti solo cifre e operatori sicuri: + - * / ( )
+  const safe = /^[0-9+\-*/()]+$/;
+  if (!safe.test(expr)) {
+    alert("Espressione non valida. Usa solo numeri e + - * / ( )");
+    return;
+  }
 
-    // Converti in intero (centesimi)
-    const valoreCentesimi = Math.round(valore);
+  // Valuta in modo controllato
+  let valore;
+  try {
+    // Esegue come pura espressione aritmetica
+    valore = Function("return (" + expr + ")")();
+  } catch (e) {
+    alert("Espressione non valida");
+    return;
+  }
 
-    importi.push(valoreCentesimi);
-    input.value = "";
-    aggiornaLista();
-    aggiornaTotale();
+  if (typeof valore !== "number" || !isFinite(valore) || valore <= 0) {
+    alert("Risultato non valido");
+    return;
+  }
+
+  // Lavoriamo in centesimi: arrotonda all'intero più vicino
+  const valoreCentesimi = Math.round(valore);
+
+  importi.push(valoreCentesimi);
+  input.value = "";
+  aggiornaLista();
+  aggiornaTotale();
 }
 
 function aggiornaLista() {
@@ -169,6 +203,20 @@ function calcola() {
         Buoni da 7,50 €: <b>${bestSmall}</b>
     `;
 }
+
+function ins(op) {
+  const input = document.getElementById("importo");
+  const start = input.selectionStart ?? input.value.length;
+  const end = input.selectionEnd ?? input.value.length;
+
+  input.value = input.value.slice(0, start) + op + input.value.slice(end);
+  // riposiziona il cursore dopo l’operatore inserito
+  const pos = start + op.length;
+  requestAnimationFrame(() => {
+    input.focus();
+    input.setSelectionRange(pos, pos);
+  });
+}    
 </script>
 
 <script>
@@ -225,6 +273,7 @@ if ('serviceWorker' in navigator) {
 </body>
 
 </html>
+
 
 
 
