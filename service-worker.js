@@ -1,4 +1,6 @@
-const VERSION = "v1.0.7"; // 🔥 CAMBIA QUESTA STRINGA AD OGNI MODIFICA
+// 🔥 CAMBIA LA VERSIONE OGNI VOLTA CHE FAI UNA MODIFICA
+const VERSION = "v1.0.2";
+
 const CACHE_NAME = `buoni-pasto-cache-${VERSION}`;
 
 const FILES_TO_CACHE = [
@@ -7,53 +9,64 @@ const FILES_TO_CACHE = [
   "icon.png"
 ];
 
-// Install: carica file ignorando la cache HTTP del CDN
+// INSTALLATION — Cache dei file con bypass della cache HTTP
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
+
     await Promise.all(
-      FILES_TO_CACHE.map(url =>
-        fetch(new Request(url, { cache: 'reload' })) // bypass HTTP cache
-          .then(resp => cache.put(url, resp))
-      )
+      FILES_TO_CACHE.map(async (url) => {
+        const response = await fetch(url, { cache: "reload" });
+        await cache.put(url, response.clone());
+      })
     );
   })());
-  self.skipWaiting(); // attiva subito il nuovo SW
+
+  // Attiva subito il nuovo service worker
+  self.skipWaiting();
 });
 
-// Activate: elimina cache vecchie e avvisa i client
+// ACTIVATE — elimina cache vecchie e notifica versione nuova
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
+
+    // Elimina tutte le cache vecchie
     await Promise.all(
-      keys.map(k => (k !== CACHE_NAME ? caches.delete(k) : null))
+      keys.map((key) => {
+        if (key !== CACHE_NAME) {
+          return caches.delete(key);
+        }
+      })
     );
 
-    // Avvisa tutte le pagine controllate
-    const clients = await self.clients.matchAll();
-    clients.forEach(client => {
+    // Notifica a tutte le pagine che è disponibile una nuova versione
+    const clients = await self.clients.matchAll({ type: "window" });
+    clients.forEach((client) => {
       client.postMessage({ type: "NEW_VERSION" });
     });
   })());
-  self.clients.claim(); // prendi subito il controllo delle pagine
+
+  // Prende immediatamente il controllo delle pagine
+  self.clients.claim();
 });
 
-// Fetch: cache-first semplice
+// FETCH — strategia: cache first + fallback a rete
 self.addEventListener("fetch", (event) => {
-  // Per navigazioni, serviamo l'index dalla cache se possibile
-  if (event.request.mode === 'navigate') {
+  // Per navigazione usa index.html dalla cache
+  if (event.request.mode === "navigate") {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
       const cached = await cache.match("index.html");
-      if (cached) return cached;
-      return fetch(event.request);
+      return cached || fetch(event.request);
     })());
     return;
   }
 
+  // Per gli altri file: cache-first
   event.respondWith(
-    caches.match(event.request).then(resp => resp || fetch(event.request))
+    caches.match(event.request).then((cached) => {
+      return cached || fetch(event.request);
+    })
   );
 });
-
-
