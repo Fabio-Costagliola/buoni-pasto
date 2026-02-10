@@ -2,14 +2,17 @@
   "name": "Buoni Pasto",
   "short_name": "BuoniPasto",
   "start_url": "index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#007aff",
+  "description": "Calcolatore dei buoni pasto con combinazioni ottimali.",
   "icons": [
     {
       "src": "icon.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
