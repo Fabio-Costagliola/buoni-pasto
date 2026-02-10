@@ -73,14 +73,32 @@ let importi = [];
 
 function aggiungiImporto() {
     const input = document.getElementById("importo");
-    const valore = parseInt(input.value);
+    const testo = input.value;
 
-    if (!isNaN(valore) && valore > 0) {
-        importi.push(valore);
-        input.value = "";
-        aggiornaLista();
-        aggiornaTotale();
+    if (!testo) return;
+
+    // ✨ Valuta le espressioni come "199*2"
+    let valore;
+    try {
+        valore = Function("return " + testo)();
+    } catch (e) {
+        alert("Espressione non valida");
+        return;
     }
+
+    // Se non è numero o è negativo, blocca
+    if (isNaN(valore) || valore <= 0) {
+        alert("Inserisci un numero valido o un'espressione valida (es: 100*2)");
+        return;
+    }
+
+    // Converti in intero (centesimi)
+    const valoreCentesimi = Math.round(valore);
+
+    importi.push(valoreCentesimi);
+    input.value = "";
+    aggiornaLista();
+    aggiornaTotale();
 }
 
 function aggiornaLista() {
@@ -175,3 +193,4 @@ if ('serviceWorker' in navigator) {
 </body>
 
 </html>
+
