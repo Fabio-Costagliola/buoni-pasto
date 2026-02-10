@@ -1,5 +1,5 @@
 // 🔥 CAMBIA LA VERSIONE OGNI VOLTA CHE FAI UNA MODIFICA
-const VERSION = "v1.0.18";
+const VERSION = "v1.0.19";
 
 const CACHE_NAME = `buoni-pasto-cache-${VERSION}`;
 
@@ -70,6 +70,7 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
 
 
 
